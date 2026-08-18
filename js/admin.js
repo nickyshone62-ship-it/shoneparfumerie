@@ -2,6 +2,35 @@
    SHONE PARFUMERIE - ADMIN DASHBOARD ENGINE (ÉTAPE 10)
    ========================================================================== */
 
+// SHONE DB HELPER FOR ADMIN BACKWARD COMPATIBILITY
+const ShoneDB = {
+  async getOrders() {
+    return JSON.parse(localStorage.getItem('shone_orders')) || [];
+  },
+  async getProducts() {
+    return JSON.parse(localStorage.getItem('shone_products')) || (typeof PRODUCTS_DATA !== 'undefined' ? PRODUCTS_DATA : []);
+  },
+  async updateOrderStatus(orderNumber, newStatus) {
+    let orders = await this.getOrders();
+    let idx = orders.findIndex(o => o.orderNumber === orderNumber);
+    if (idx > -1) {
+      orders[idx].status = newStatus;
+      localStorage.setItem('shone_orders', JSON.stringify(orders));
+    }
+  },
+  async saveProduct(productData) {
+    let products = await this.getProducts();
+    let idx = products.findIndex(p => p.id === productData.id);
+    if (idx > -1) {
+      products[idx] = productData;
+    } else {
+      products.push(productData);
+    }
+    localStorage.setItem('shone_products', JSON.stringify(products));
+  }
+};
+window.ShoneDB = ShoneDB;
+
 document.addEventListener('DOMContentLoaded', () => {
   // Check if admin is authenticated
   if (sessionStorage.getItem('shone_admin_logged') === 'true') {
