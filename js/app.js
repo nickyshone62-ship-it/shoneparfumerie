@@ -492,6 +492,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    if (currentCartPaymentMethod !== 'cash' && !uploadedCartReceiptBase64) {
+      alert("⚠️ La capture d'écran / reçu de paiement (Orange Money, Moov Money ou Wave) est OBLIGATOIRE pour valider la commande de votre panier. Veuillez sélectionner le fichier image de votre reçu.");
+      const fileInp = document.getElementById('cart-receipt-file');
+      if (fileInp) {
+        fileInp.focus();
+        fileInp.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
+    }
+
     const city = isCartDeliveryRequested ? (document.getElementById('cart-cust-city').value.trim() || (country === 'Mali' ? 'Bamako' : 'Ouagadougou')) : 'Retrait Boutique';
     const neighborhood = isCartDeliveryRequested ? document.getElementById('cart-cust-neighborhood').value.trim() : 'Point de vente';
 
@@ -1110,6 +1120,16 @@ ${itemsSummaryText}
       alert("⚠️ Veuillez saisir votre Numéro WhatsApp.");
       const elem = document.getElementById('direct-cust-phone');
       if (elem) elem.focus();
+      return;
+    }
+
+    if (currentPaymentMethod !== 'cash' && !uploadedReceiptBase64) {
+      alert("⚠️ La capture d'écran / reçu de paiement (Orange Money, Moov Money ou Wave) est OBLIGATOIRE pour valider votre commande. Veuillez sélectionner le fichier image de votre reçu.");
+      const fileInp = document.getElementById('direct-receipt-file');
+      if (fileInp) {
+        fileInp.focus();
+        fileInp.scrollIntoView({ behavior: 'smooth' });
+      }
       return;
     }
 
