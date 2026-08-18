@@ -56,14 +56,15 @@
       </ul>
 
       <div class="nav-actions">
-        <!-- Admin Toggle Button -->
-        <button class="btn btn-outline" style="padding: 8px 16px; font-size: 0.85rem;" onclick="switchView('admin')">
-          <i class="fas fa-user-shield text-gold-gradient"></i> Admin
+        <!-- Bouton Administrateur (Discret en Haut) -->
+        <button class="admin-nav-btn" onclick="switchView('admin')" title="Espace Administrateur Shone">
+          <i class="fas fa-user-shield text-gold-gradient"></i> Administrateur
         </button>
 
+        <!-- Bouton Panier (Directement en Bas de la touche Administrateur pour une visibilité optimale) -->
         <button class="cart-btn" id="open-cart-btn" onclick="openModal('cart-modal')">
           <i class="fas fa-shopping-bag"></i>
-          <span>Panier</span>
+          <span>Mon Panier</span>
           <div class="cart-badge" id="cart-badge">0</div>
         </button>
 

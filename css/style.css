@@ -122,7 +122,38 @@ h1, h2, h3, h4, .font-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 80px;
+  min-height: 90px;
+  padding: 8px 0;
+}
+
+.nav-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
+}
+
+.admin-nav-btn {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  background: rgba(30, 58, 138, 0.35);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.admin-nav-btn:hover {
+  color: #FFFFFF;
+  border-color: #60A5FA;
+  background: rgba(37, 99, 235, 0.45);
 }
 
 .logo {
@@ -207,11 +238,7 @@ h1, h2, h3, h4, .font-heading {
   width: 100%;
 }
 
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+
 
 .cart-btn {
   position: relative;
