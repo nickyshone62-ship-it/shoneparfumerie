@@ -294,22 +294,292 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (subtotalElem) subtotalElem.textContent = `${subtotal.toLocaleString('fr-FR')} FCFA`;
     if (totalElem) totalElem.textContent = `${subtotal.toLocaleString('fr-FR')} FCFA`;
+
+    // Also update checkout form container if open
+    if (document.getElementById('cart-checkout-form-container') && document.getElementById('cart-checkout-form-container').style.display !== 'none') {
+      updateCartCheckoutTotals();
+    }
   }
 
-  window.checkoutFromCart = function() {
+  // --------------------------------------------------------------------------
+  // FORMULAIRE DE COMMANDE MULTI-ARTICLES (PANIER)
+  // --------------------------------------------------------------------------
+  let isCartDeliveryRequested = true;
+  let isCartTrackingRequested = true;
+  let currentCartPaymentMethod = 'orange';
+  let uploadedCartReceiptBase64 = null;
+
+  window.showCartCheckoutForm = function() {
     if (cart.length === 0) {
       alert("⚠️ Votre panier est vide. Veuillez ajouter un parfum d'abord.");
       return;
     }
-
-    const firstItem = cart[0];
-    const prod = allProducts.find(p => p.id === firstItem.id);
-    if (prod) {
-      currentOrderProduct = prod;
-      currentOrderQty = firstItem.quantity || 1;
+    const container = document.getElementById('cart-checkout-form-container');
+    if (container) {
+      container.style.display = 'block';
+      container.scrollIntoView({ behavior: 'smooth' });
     }
+    const initialActions = document.getElementById('cart-initial-actions');
+    if (initialActions) initialActions.style.display = 'none';
+
+    selectCartPaymentMethod('orange');
+    updateCartCheckoutTotals();
+  };
+
+  window.checkoutFromCart = function() {
+    showCartCheckoutForm();
+  };
+
+  window.selectCartDeliveryChoice = function(choice) {
+    isCartDeliveryRequested = choice;
+    const bYes = document.getElementById('cart-delivery-yes-btn');
+    const bNo = document.getElementById('cart-delivery-no-btn');
+    const detailsBox = document.getElementById('cart-delivery-details-box');
+
+    if (choice) {
+      if (bYes) bYes.classList.add('active');
+      if (bNo) bNo.classList.remove('active');
+      if (detailsBox) detailsBox.style.display = 'block';
+    } else {
+      if (bNo) bNo.classList.add('active');
+      if (bYes) bYes.classList.remove('active');
+      if (detailsBox) detailsBox.style.display = 'none';
+    }
+    updateCartCheckoutTotals();
+  };
+
+  window.selectCartTrackingChoice = function(choice) {
+    isCartTrackingRequested = choice;
+    const bYes = document.getElementById('cart-tracking-yes-btn');
+    const bNo = document.getElementById('cart-tracking-no-btn');
+
+    if (choice) {
+      if (bYes) bYes.classList.add('active');
+      if (bNo) bNo.classList.remove('active');
+    } else {
+      if (bNo) bNo.classList.add('active');
+      if (bYes) bYes.classList.remove('active');
+    }
+  };
+
+  window.selectCartPaymentMethod = function(method) {
+    currentCartPaymentMethod = method;
+
+    ['orange', 'moov', 'wave', 'cash'].forEach(m => {
+      const card = document.getElementById(`cart-pay-${m}-card`);
+      if (card) card.classList.remove('selected', 'active');
+    });
+
+    const activeCard = document.getElementById(`cart-pay-${method}-card`);
+    if (activeCard) activeCard.classList.add('active', 'selected');
+
+    updateCartPaymentInstructionsText();
+  };
+
+  function getCartTotalAmount() {
+    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+
+  function updateCartCheckoutTotals() {
+    const total = getCartTotalAmount();
+    const totElem = document.getElementById('cart-checkout-total-val');
+    if (totElem) totElem.textContent = `${total.toLocaleString('fr-FR')} FCFA`;
+
+    updateCartPaymentInstructionsText();
+  }
+
+  function updateCartPaymentInstructionsText() {
+    const totalAmount = getCartTotalAmount();
+    const instrText = document.getElementById('cart-pay-instructions-text');
+    const uploadBox = document.getElementById('cart-receipt-upload-box');
+    if (!instrText) return;
+
+    if (currentCartPaymentMethod === 'orange') {
+      const ussdCode = `*144*2*1*${ORANGE_NUMBER}*${totalAmount}#`;
+      instrText.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 10px; word-break: break-all; overflow-wrap: anywhere;">
+          <div><i class="fas fa-mobile-screen-button" style="color: #FF7900;"></i> <strong>Paiement Orange Money (Panier Tot. ${totalAmount.toLocaleString('fr-FR')} FCFA) :</strong></div>
+          <div style="background: var(--bg-dark); padding: 12px; border-radius: var(--radius-sm); border: 1px solid #FF7900; word-break: break-all;">
+            <div style="font-size: 0.85rem; color: var(--text-muted);">Numéro Orange Money Shone : <strong>+226 ${ORANGE_NUMBER}</strong></div>
+            <div style="font-size: clamp(0.85rem, 3.8vw, 1.15rem); font-weight: 800; color: #FF7900; margin-top: 6px; word-break: break-all; overflow-wrap: anywhere;">
+              Code USSD à composer : <code style="background: rgba(255, 121, 0, 0.15); padding: 4px 8px; border-radius: 4px; font-family: monospace; word-break: break-all !important; display: inline-block;">${ussdCode}</code>
+            </div>
+          </div>
+          <a href="tel:${encodeURIComponent(ussdCode)}" class="btn btn-gold" style="padding: 10px 14px; font-size: 0.85rem; width: 100%; white-space: normal; text-align: center;">
+            <i class="fas fa-phone"></i> Lancer l'appel USSD Orange Money (*144*2*1*)
+          </a>
+        </div>
+      `;
+      if (uploadBox) uploadBox.style.display = 'block';
+    } else if (currentCartPaymentMethod === 'moov') {
+      const ussdCode = `*555*2*1*${MOOV_NUMBER}*${totalAmount}#`;
+      instrText.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 10px; word-break: break-all; overflow-wrap: anywhere;">
+          <div><i class="fas fa-mobile-retro" style="color: #005CA9;"></i> <strong>Paiement Moov Money (Panier Tot. ${totalAmount.toLocaleString('fr-FR')} FCFA) :</strong></div>
+          <div style="background: var(--bg-dark); padding: 12px; border-radius: var(--radius-sm); border: 1px solid #005CA9; word-break: break-all;">
+            <div style="font-size: 0.85rem; color: var(--text-muted);">Numéro Moov Money Shone : <strong>+226 ${MOOV_NUMBER}</strong></div>
+            <div style="font-size: clamp(0.85rem, 3.8vw, 1.15rem); font-weight: 800; color: #60A5FA; margin-top: 6px; word-break: break-all; overflow-wrap: anywhere;">
+              Code USSD à composer : <code style="background: rgba(0, 92, 169, 0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace; word-break: break-all !important; display: inline-block;">${ussdCode}</code>
+            </div>
+          </div>
+          <a href="tel:${encodeURIComponent(ussdCode)}" class="btn btn-gold" style="padding: 10px 14px; font-size: 0.85rem; width: 100%; background: #005CA9; color: #FFF; white-space: normal; text-align: center;">
+            <i class="fas fa-phone"></i> Lancer l'appel USSD Moov Money (*555*2*1*)
+          </a>
+        </div>
+      `;
+      if (uploadBox) uploadBox.style.display = 'block';
+    } else if (currentCartPaymentMethod === 'wave') {
+      const wavePhone = `+226 ${WAVE_NUMBER}`;
+      instrText.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div><i class="fas fa-water" style="color: #1DC3F2;"></i> <strong>Paiement Wave Mobile Money :</strong></div>
+          <div style="background: var(--bg-dark); padding: 14px; border-radius: var(--radius-sm); border: 1px solid #1DC3F2;">
+            <div style="font-size: 0.85rem; color: var(--text-muted);">Numéro de compte Wave Shone :</div>
+            <div style="font-size: 1.4rem; font-weight: 900; color: #1DC3F2; margin-top: 2px;">${wavePhone}</div>
+          </div>
+          <a href="https://wave.com" target="_blank" class="btn btn-gold" style="padding: 10px 16px; font-size: 0.9rem; width: 100%; background: linear-gradient(135deg, #1DC3F2, #0D2C54); color: #FFF;">
+            <i class="fas fa-external-link-alt"></i> Ouvrir l'application Wave
+          </a>
+        </div>
+      `;
+      if (uploadBox) uploadBox.style.display = 'block';
+    } else if (currentCartPaymentMethod === 'cash') {
+      instrText.innerHTML = `<i class="fas fa-money-bill-wave" style="color: #10B981;"></i> <strong>Paiement en Espèces :</strong> Règlement à la livraison après contrôle de vos parfums ou lors du retrait en boutique.`;
+      if (uploadBox) uploadBox.style.display = 'none';
+    }
+  }
+
+  window.handleCartReceiptSelect = function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        uploadedCartReceiptBase64 = evt.target.result;
+        const nameLbl = document.getElementById('cart-receipt-file-name');
+        if (nameLbl) nameLbl.textContent = `✅ Capture enregistrée : ${file.name}`;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      uploadedCartReceiptBase64 = null;
+      const nameLbl = document.getElementById('cart-receipt-file-name');
+      if (nameLbl) nameLbl.textContent = "";
+    }
+  };
+
+  window.submitCartCheckoutOrder = function(e) {
+    e.preventDefault();
+    if (cart.length === 0) {
+      alert("⚠️ Votre panier est vide.");
+      return;
+    }
+
+    const countryEl = document.getElementById('cart-cust-country');
+    const country = countryEl ? countryEl.value : 'Burkina Faso';
+    const name = document.getElementById('cart-cust-name').value.trim();
+    const phone = document.getElementById('cart-cust-phone').value.trim();
+
+    if (!name) {
+      alert("⚠️ Veuillez saisir votre Nom & Prénom.");
+      const elem = document.getElementById('cart-cust-name');
+      if (elem) elem.focus();
+      return;
+    }
+
+    if (!phone) {
+      alert("⚠️ Veuillez saisir votre Numéro WhatsApp.");
+      const elem = document.getElementById('cart-cust-phone');
+      if (elem) elem.focus();
+      return;
+    }
+
+    const city = isCartDeliveryRequested ? (document.getElementById('cart-cust-city').value.trim() || (country === 'Mali' ? 'Bamako' : 'Ouagadougou')) : 'Retrait Boutique';
+    const neighborhood = isCartDeliveryRequested ? document.getElementById('cart-cust-neighborhood').value.trim() : 'Point de vente';
+
+    const subtotal = getCartTotalAmount();
+    const total = subtotal;
+
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    const orderNumber = isCartTrackingRequested ? `SHN-${dateStr}-${randomNum}` : `COMMANDE-${dateStr}-${randomNum}`;
+
+    const newOrder = {
+      orderNumber,
+      customer: { name, phone, country, city, neighborhood },
+      items: [...cart],
+      subtotal,
+      deliveryFee: "À convenir selon la ville / quartier",
+      total,
+      deliveryRequested: isCartDeliveryRequested,
+      trackingRequested: isCartTrackingRequested,
+      paymentMethod: currentCartPaymentMethod.toUpperCase(),
+      receiptImage: uploadedCartReceiptBase64,
+      status: 'Commande reçue',
+      createdAt: now.toISOString()
+    };
+
+    allOrders.unshift(newOrder);
+    localStorage.setItem('shone_orders', JSON.stringify(allOrders));
+
+    if (window.ShoneCloudSync) {
+      window.ShoneCloudSync.pushOrder(newOrder);
+    }
+
+    const succNumElem = document.getElementById('success-order-num');
+    if (succNumElem) succNumElem.textContent = orderNumber;
+
+    const paymentLabel = currentCartPaymentMethod === 'orange' ? 'Orange Money' : currentCartPaymentMethod === 'moov' ? 'Moov Money' : currentCartPaymentMethod === 'wave' ? 'Wave' : 'Espèces à la livraison';
+    const deliveryText = isCartDeliveryRequested ? `Livraison souhaitée à ${neighborhood}, ${city} (${country})` : 'Retrait en boutique (Sans livraison)';
+
+    const itemsSummaryText = cart.map(i => `- ${i.name} (Qté: ${i.quantity}) : ${(i.price * i.quantity).toLocaleString('fr-FR')} FCFA`).join('\n');
+    const totalQtyCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+    const waMsgText = `Bonjour Shone Parfumerie ! Je viens de valider la commande de mon panier :
+📦 N° Commande : ${orderNumber}
+🛍️ PRODUITS DU PANIER (Qté totale: ${totalQtyCount}) :
+${itemsSummaryText}
+📍 Pays : ${country}
+👤 Client : ${name} (${phone})
+🚚 Zone / Quartier : ${deliveryText}
+💳 Paiement : ${paymentLabel}
+💰 TOTAL PANIER À PAYER : ${total.toLocaleString('fr-FR')} FCFA`;
+
+    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMsgText)}`;
+    const succWaBtn = document.getElementById('success-wa-btn');
+    if (succWaBtn) succWaBtn.href = waUrl;
+
+    // Reset Cart
+    cart = [];
+    saveCart();
+    renderCart();
+    updateCartBadge();
+
+    const cartFormContainer = document.getElementById('cart-checkout-form-container');
+    if (cartFormContainer) cartFormContainer.style.display = 'none';
+    const initialActions = document.getElementById('cart-initial-actions');
+    if (initialActions) initialActions.style.display = 'flex';
+
     closeModal('cart-modal');
-    openDirectOrderModal(firstItem.id);
+    openModal('success-modal');
+
+    if (document.getElementById('admin-view') && document.getElementById('admin-view').style.display !== 'none') {
+      loadAdminData();
+    }
+
+    window.open(waUrl, '_blank');
+  };
+
+  window.onCartCountryChange = function(country) {
+    const cityInput = document.getElementById('cart-cust-city');
+    if (cityInput) {
+      if (country === 'Mali') {
+        cityInput.value = 'Bamako';
+        cityInput.placeholder = 'Ex: Bamako, ACI 2000, Badalabougou...';
+      } else {
+        cityInput.value = 'Ouagadougou';
+        cityInput.placeholder = "Ex: Ouagadougou, Karpala, Patte d'Oie...";
+      }
+    }
   };
 
   // --------------------------------------------------------------------------

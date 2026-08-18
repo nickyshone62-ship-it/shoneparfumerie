@@ -925,10 +925,10 @@
 
   <!-- MODAL: PANIER -->
   <div class="modal-overlay" id="cart-modal">
-    <div class="modal-card">
+    <div class="modal-card" style="max-width: 740px;">
       <button class="modal-close" onclick="closeModal('cart-modal')"><i class="fas fa-times"></i></button>
       <h2 style="font-family: var(--font-heading); color: var(--gold-light); margin-bottom: 20px;">
-        <i class="fas fa-shopping-bag"></i> Votre Panier
+        <i class="fas fa-shopping-bag"></i> Votre Panier (Commandes Groupées)
       </h2>
 
       <div class="cart-items-list" id="cart-items-container">
@@ -946,10 +946,131 @@
         </div>
       </div>
 
-      <div style="margin-top: 24px; display: flex; gap: 16px;">
+      <!-- FORMULAIRE DE COMMANDE MULTI-PARFUMS INTÉGRÉ AU PANIER -->
+      <div id="cart-checkout-form-container" style="display: none; margin-top: 24px; border-top: 1px solid var(--border-gold); padding-top: 24px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <span class="section-subtitle"><i class="fas fa-file-signature"></i> Finaliser ma Commande Multi-Articles</span>
+          <h3 style="font-family: var(--font-heading); color: var(--gold-light); font-size: 1.4rem;">Coordonnées & Paiement du Panier</h3>
+        </div>
+
+        <form id="cart-checkout-form" onsubmit="submitCartCheckoutOrder(event)">
+          <!-- 1. COORDONNÉES CLIENT AVEC PAYS -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label"><i class="fas fa-globe text-gold-gradient"></i> Pays *</label>
+              <select id="cart-cust-country" class="form-control" style="font-weight: 600;" onchange="if(window.onCartCountryChange) window.onCartCountryChange(this.value);">
+                <option value="Burkina Faso">Burkina Faso (+226)</option>
+                <option value="Mali">Mali (+223)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label"><i class="fas fa-user text-gold-gradient"></i> Nom du Client *</label>
+              <input type="text" id="cart-cust-name" class="form-control" placeholder="Ex: Moussa Sawadogo" required />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label"><i class="fas fa-phone text-gold-gradient"></i> Numéro WhatsApp *</label>
+              <input type="tel" id="cart-cust-phone" class="form-control" placeholder="Ex: 70 00 00 00 / 60 00 00 00" required />
+            </div>
+          </div>
+
+          <!-- 2. LIVRAISON OUI / NON -->
+          <div class="form-group">
+            <label class="form-label"><i class="fas fa-truck text-gold-gradient"></i> Souhaitez-vous une livraison à domicile ? *</label>
+            <div class="option-toggle-group">
+              <button type="button" class="option-toggle-btn active" id="cart-delivery-yes-btn" onclick="selectCartDeliveryChoice(true)">
+                <i class="fas fa-check-circle"></i> OUI (Livraison)
+              </button>
+              <button type="button" class="option-toggle-btn" id="cart-delivery-no-btn" onclick="selectCartDeliveryChoice(false)">
+                <i class="fas fa-store"></i> NON (Retrait en boutique)
+              </button>
+            </div>
+          </div>
+
+          <div id="cart-delivery-details-box" style="background: var(--bg-dark); border: 1px solid var(--border-dark); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Ville</label>
+                <input type="text" id="cart-cust-city" class="form-control" placeholder="Ex: Ouagadougou / Bamako" value="Ouagadougou" />
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Quartier / Zone de livraison</label>
+                <input type="text" id="cart-cust-neighborhood" class="form-control" placeholder="Ex: Karpala (Ouaga) ou ACI 2000 (Bamako)..." />
+              </div>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--gold-light); margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-circle-info"></i> Les frais de livraison exacts vous seront communiqués par Shone Parfumerie selon votre quartier.
+            </div>
+          </div>
+
+          <!-- 3. SUIVI OUI / NON -->
+          <div class="form-group">
+            <label class="form-label"><i class="fas fa-magnifying-glass-location text-gold-gradient"></i> Souhaitez-vous suivre votre colis (Numéro SHN) ? *</label>
+            <div class="option-toggle-group">
+              <button type="button" class="option-toggle-btn active" id="cart-tracking-yes-btn" onclick="selectCartTrackingChoice(true)">
+                <i class="fas fa-check-circle"></i> OUI (Recevoir N° SHN)
+              </button>
+              <button type="button" class="option-toggle-btn" id="cart-tracking-no-btn" onclick="selectCartTrackingChoice(false)">
+                <i class="fas fa-times-circle"></i> NON
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. MODE DE PAIEMENT -->
+          <div class="form-group">
+            <label class="form-label"><i class="fas fa-wallet text-gold-gradient"></i> Choisissez votre Mode de Paiement (Logos Officiels) *</label>
+            <div class="payment-methods-grid">
+              <div class="payment-card selected" id="cart-pay-orange-card" onclick="selectCartPaymentMethod('orange')">
+                <img src="images/logo-orange-money.svg" alt="Orange Money" class="payment-logo-img" />
+                <div class="payment-card-title">Orange Money</div>
+              </div>
+              <div class="payment-card" id="cart-pay-moov-card" onclick="selectCartPaymentMethod('moov')">
+                <img src="images/logo-moov-money.svg" alt="Moov Money" class="payment-logo-img" />
+                <div class="payment-card-title">Moov Money</div>
+              </div>
+              <div class="payment-card" id="cart-pay-wave-card" onclick="selectCartPaymentMethod('wave')">
+                <img src="images/logo-wave.svg" alt="Wave" class="payment-logo-img" />
+                <div class="payment-card-title">Wave</div>
+              </div>
+              <div class="payment-card" id="cart-pay-cash-card" onclick="selectCartPaymentMethod('cash')">
+                <img src="images/logo-cash.svg" alt="Espèces" class="payment-logo-img" />
+                <div class="payment-card-title">Espèces</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- INSTRUCTIONS DE PAIEMENT MULTI-ARTICLES -->
+          <div id="cart-payment-instructions-box" style="background: rgba(59, 130, 246, 0.12); border: 1px solid var(--border-gold); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">
+            <div id="cart-pay-instructions-text" style="font-size: 0.9rem; color: var(--gold-light); font-weight: 600; margin-bottom: 12px;">
+              <!-- Rendered via JS -->
+            </div>
+            
+            <div id="cart-receipt-upload-box">
+              <label class="form-label" style="font-size: 0.85rem; color: var(--gold-light); font-weight: 700;">
+                <i class="fas fa-camera text-gold-gradient"></i> Capture d'écran du paiement / Reçu <span style="color: var(--text-muted); font-size: 0.8rem;">(Optionnel)</span>
+              </label>
+              <input type="file" id="cart-receipt-file" class="form-control" accept="image/*" onchange="handleCartReceiptSelect(event)" />
+              <div id="cart-receipt-file-name" style="font-size: 0.8rem; color: var(--accent-success); font-weight: 700; margin-top: 6px;"></div>
+            </div>
+          </div>
+
+          <!-- RECAPITULATIF FINAL ET BOUTON WHATSAPP -->
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-gold); border-radius: var(--radius-md); padding: 20px; margin-bottom: 24px;">
+            <div class="summary-row total" style="margin-top: 0; font-size: 1.3rem;">
+              <span>TOTAL PANIER À PAYER :</span>
+              <span id="cart-checkout-total-val" style="color: #60A5FA;">0 FCFA</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-whatsapp" style="width: 100%; padding: 16px; font-size: 1.15rem; font-weight: bold;">
+            <i class="fab fa-whatsapp"></i> Valider et Envoyer ma Commande Panier sur WhatsApp
+          </button>
+        </form>
+      </div>
+
+      <div id="cart-initial-actions" style="margin-top: 24px; display: flex; gap: 16px;">
         <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('cart-modal')">Continuer mes achats</button>
-        <button class="btn btn-gold" style="flex: 1;" onclick="checkoutFromCart()">
-          Passer la commande <i class="fas fa-arrow-right"></i>
+        <button class="btn btn-gold" style="flex: 1;" onclick="showCartCheckoutForm()">
+          Valider le Panier & Commander <i class="fas fa-arrow-right"></i>
         </button>
       </div>
     </div>
